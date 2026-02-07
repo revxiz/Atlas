@@ -1,0 +1,151 @@
+# Atlas Configuration
+# Kubernetes Orchestration for Minecraft Networks
+# https://github.com/revxiz/Velotim
+
+# Config version - used for automatic migrations
+config-version: 1
+
+# Hosting mode: auto-detected if not set
+# Options: standalone, shared, pterodactyl, docker, kubernetes
+hosting-mode: "auto"
+
+# Kubernetes API Configuration
+kubernetes:
+  enabled: true
+  namespace: "minecraft"
+
+  # Authentication strategy: auto, in-cluster, kubeconfig
+  # auto = detect based on environment
+  # in-cluster = use ServiceAccount token (for pods)
+  # kubeconfig = use kubeconfig file (for external)
+  auth-strategy: "auto"
+
+  # Path to kubeconfig file (only for kubeconfig strategy)
+  # Leave empty to use default (~/.kube/config or KUBECONFIG env)
+  kubeconfig-path: ""
+
+  # Connection settings
+  connection-timeout-ms: 10000
+  request-timeout-ms: 30000
+
+# Auto-Scaling Configuration (The Brain)
+scaling:
+  enabled: true
+  check-interval-seconds: 10
+
+  # Cooldown periods to prevent thrashing
+  cooldown:
+    scale-up-seconds: 30
+    scale-down-seconds: 300
+
+  # Replica limits
+  limits:
+    min-replicas: 1
+    max-replicas: 10
+
+  # Scaling rules - evaluated in order
+  # Types: player-count, tps, mspt, queue-depth, cpu, memory
+  rules:
+    - name: "lobby-player-scaling"
+      type: "player-count"
+      target: "lobby-*"
+      scale-up-threshold: 80
+      scale-down-threshold: 20
+      priority: 1
+
+    - name: "global-tps-scaling"
+      type: "tps"
+      target: "*"
+      scale-up-threshold: 18.0
+      priority: 2
+
+    - name: "global-mspt-scaling"
+      type: "mspt"
+      target: "*"
+      scale-up-threshold: 45.0
+      priority: 3
+
+# Graceful Player Drain Configuration
+drain:
+  enabled: true
+  timeout-seconds: 300
+  check-interval-seconds: 5
+  # Force drain even with players after timeout
+  force-after-timeout: true
+
+# Redis Configuration (shared with Velotim)
+redis:
+  enabled: true
+  host: "localhost"
+  port: 6379
+  username: ""
+  password: ""  # Supports ${ATLAS_REDIS_PASSWORD}
+  ssl: false
+  prefix: "atlas:"
+
+# Velotim Integration (soft dependency)
+velotim:
+  enabled: true
+  redis-shared: true
+  discovery-prefix: "velotim:servers:"
+  # Sync scaling events to Velotim dashboard
+  dashboard-sync: true
+
+# Health Probe Server (for K8s liveness/readiness)
+health:
+  enabled: true
+  port: 9200
+  bind: "0.0.0.0"
+  # Endpoints: /healthz (liveness), /readyz (readiness), /metrics
+
+# Atlas Dashboard (Global Nerve Center)
+dashboard:
+  enabled: true
+  port: 9300
+  bind: "127.0.0.1"
+  auth-token: ""  # Auto-generated on first run if empty
+  # IP Allowlist (WAF)
+  allowed-ips: []
+  # Refresh intervals (seconds)
+  refresh:
+    critical: 2      # Threat level, throughput
+    standard: 10     # Node grid, scaling status
+    slow: 30         # Predictions, slow queries
+
+# Metrics Export (Prometheus format)
+metrics:
+  enabled: true
+  prefix: "atlas_"
+  # Exported on health.port at /metrics
+
+# Slow Query Monitoring
+slow-query:
+  enabled: true
+  threshold-ms: 100
+  max-entries: 100
+  # Types to monitor: redis, database
+  monitor-redis: true
+
+# Audit Logging
+audit:
+  enabled: true
+  log-dir: "logs/atlas"
+  retention-days: 30
+  # Log levels: all, important, critical
+  level: "all"
+
+# Canary Deployment Support
+canary:
+  enabled: true
+  default-percentage: 5
+  # Auto-rollback on failure detection
+  auto-rollback: true
+  rollback-threshold-errors: 10
+
+# Predictive Scaling
+predictions:
+  enabled: true
+  # Historical data window for predictions
+  history-hours: 168  # 1 week
+  # Prediction horizon
+  forecast-minutes: 60

@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlas - Global Nerve Center</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --bg-card: #1e1e2a;
+            --border-color: #2a2a3a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --text-muted: #606070;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .login-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-box h1 {
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 28px;
+            color: var(--accent-cyan);
+        }
+
+        .login-box p {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .login-box input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent-cyan);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .login-box button:hover {
+            background: #0891b2;
+        }
+
+        .login-error {
+            color: var(--accent-red);
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .header-title span {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        .status-dot.warning { background: var(--accent-yellow); }
+        .status-dot.error { background: var(--accent-red); }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px 24px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        /* Level 1: Global Nerve Center */
+        .level-1 {
+            display: grid;
+            grid-template-columns: 200px 1fr 300px;
+            gap: 20px;
+        }
+
+        .threat-gauge {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .threat-level {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .threat-level.green { color: var(--accent-green); }
+        .threat-level.yellow { color: var(--accent-yellow); }
+        .threat-level.red { color: var(--accent-red); }
+
+        .threat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .z-score {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .incident-ticker {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .incident-ticker h3 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .incident-list {
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .incident-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+
+        .incident-item:last-child {
+            border-bottom: none;
+        }
+
+        .incident-type {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .incident-type.scaling { background: var(--accent-blue); color: white; }
+        .incident-type.security { background: var(--accent-red); color: white; }
+        .incident-type.health { background: var(--accent-yellow); color: black; }
+
+        .throughput-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .throughput-panel h3 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .throughput-metrics {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metric-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .metric-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+        }
+
+        /* Level 2: Infrastructure */
+        .level-2 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .card h3 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .node-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .node-tile {
+            background: var(--bg-tertiary);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .node-tile:hover {
+            border-color: var(--accent-cyan);
+        }
+
+        .node-tile.healthy { border-color: var(--accent-green); }
+        .node-tile.degraded { border-color: var(--accent-yellow); }
+        .node-tile.draining { border-color: var(--accent-red); animation: pulse 2s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .node-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .node-mspt {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .node-mspt.good { color: var(--accent-green); }
+        .node-mspt.warning { color: var(--accent-yellow); }
+        .node-mspt.critical { color: var(--accent-red); }
+
+        .node-players {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .node-legend {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .legend-color.healthy { background: var(--accent-green); }
+        .legend-color.degraded { background: var(--accent-yellow); }
+        .legend-color.draining { background: var(--accent-red); }
+
+        .scaling-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .control-btn.danger:hover {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+        }
+
+        .replica-slider {
+            margin-top: 16px;
+        }
+
+        .replica-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .replica-slider input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-tertiary);
+            appearance: none;
+        }
+
+        .replica-slider input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            cursor: pointer;
+        }
+
+        .canary-status {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .canary-bar {
+            height: 24px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            margin-top: 12px;
+        }
+
+        .canary-production {
+            background: var(--accent-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .canary-test {
+            background: var(--accent-purple);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* Level 3: Intelligence */
+        .level-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        .prediction-chart {
+            height: 200px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .slow-query-table {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .query-row {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+
+        .query-row:last-child {
+            border-bottom: none;
+        }
+
+        .query-text {
+            flex: 1;
+            font-family: 'Consolas', monospace;
+            color: var(--text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .query-time {
+            font-weight: 600;
+            margin-left: 12px;
+        }
+
+        .query-time.slow { color: var(--accent-yellow); }
+        .query-time.critical { color: var(--accent-red); }
+
+        #reputation-map {
+            height: 200px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .region-popup {
+            text-align: center;
+        }
+
+        .region-popup h4 {
+            margin-bottom: 8px;
+        }
+
+        /* Level 4: Command & Control */
+        .level-4 {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 14px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+
+        .search-btn {
+            padding: 14px 24px;
+            background: var(--accent-cyan);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .control-sections {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+
+        .dangerous-actions h4 {
+            font-size: 14px;
+            color: var(--accent-red);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .danger-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--accent-red);
+            border-radius: 8px;
+            color: var(--accent-red);
+            font-size: 13px;
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+
+        .danger-btn:hover {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .audit-log h4 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .audit-stream {
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .audit-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .audit-entry:last-child {
+            border-bottom: none;
+        }
+
+        .audit-time {
+            color: var(--text-muted);
+        }
+
+        .audit-action {
+            color: var(--accent-cyan);
+            margin: 0 8px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .modal h3 {
+            color: var(--accent-red);
+            margin-bottom: 16px;
+        }
+
+        .modal p {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .modal-btn.cancel {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .modal-btn.confirm {
+            background: var(--accent-red);
+            border: none;
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .level-1 {
+                grid-template-columns: 1fr;
+            }
+            .level-2, .level-3 {
+                grid-template-columns: 1fr;
+            }
+            .control-sections {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-box">
+            <h1>Atlas</h1>
+            <p>Global Nerve Center</p>
+            <input type="password" id="auth-token" placeholder="Enter authentication token" />
+            <button onclick="login()">Login</button>
+            <p id="login-error" class="login-error hidden"></p>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden">
+        <header class="header">
+            <div class="header-title">
+                <h1>Atlas</h1>
+                <span>Global Nerve Center</span>
+            </div>
+            <div class="header-actions">
+                <div class="header-status">
+                    <div id="status-dot" class="status-dot"></div>
+                    <span id="status-text">Connected</span>
+                </div>
+                <button onclick="logout()" style="padding: 8px 16px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); cursor: pointer;">Logout</button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Level 1: Global Nerve Center -->
+            <section class="level-1">
+                <div class="threat-gauge">
+                    <div id="threat-level" class="threat-level green">GREEN</div>
+                    <div class="threat-label">Threat Level</div>
+                    <div id="z-score" class="z-score">Z-Score: 0.00</div>
+                </div>
+
+                <div class="incident-ticker">
+                    <h3>Active Incidents</h3>
+                    <div id="incident-list" class="incident-list">
+                        <div class="incident-item">
+                            <span class="incident-type scaling">SCALING</span>
+                            <span>No active incidents</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="throughput-panel">
+                    <h3>Network Throughput</h3>
+                    <div class="throughput-metrics">
+                        <div class="metric-row">
+                            <span class="metric-label">Packets/sec</span>
+                            <span id="pps" class="metric-value">0</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Connections/sec</span>
+                            <span id="cps" class="metric-value">0</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Bandwidth</span>
+                            <span id="bandwidth" class="metric-value">0 MB/s</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Level 2: Infrastructure Map -->
+            <section class="level-2">
+                <div class="card">
+                    <h3>Infrastructure Map</h3>
+                    <div id="node-grid" class="node-grid">
+                        <!-- Nodes populated by JS -->
+                    </div>
+                    <div class="node-legend">
+                        <div class="legend-item">
+                            <div class="legend-color healthy"></div>
+                            <span>Healthy</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color degraded"></div>
+                            <span>Degraded</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color draining"></div>
+                            <span>Draining</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Scaling Controls</h3>
+                    <div class="scaling-controls">
+                        <div class="control-row">
+                            <button class="control-btn" onclick="forceScaleUp()">Force Scale Up</button>
+                            <button class="control-btn danger" onclick="drainAll()">Drain All</button>
+                        </div>
+
+                        <div class="replica-slider">
+                            <div class="replica-info">
+                                <span>Replicas</span>
+                                <span>Min: <span id="min-replicas">1</span> | Current: <span id="current-replicas">0</span> | Max: <span id="max-replicas">10</span></span>
+                            </div>
+                            <input type="range" id="replica-range" min="1" max="10" value="4" onchange="updateReplicaTarget(this.value)" />
+                        </div>
+
+                        <div class="canary-status">
+                            <h4 style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Canary Deployment</h4>
+                            <div class="canary-bar">
+                                <div id="canary-prod" class="canary-production" style="width: 95%;">Production 95%</div>
+                                <div id="canary-test" class="canary-test" style="width: 5%;">5%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Level 3: Intelligence Suite -->
+            <section class="level-3">
+                <div class="card">
+                    <h3>Predictive Analytics</h3>
+                    <div class="prediction-chart">
+                        <canvas id="prediction-canvas" class="chart-canvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Slow Query Monitor</h3>
+                    <div id="slow-queries" class="slow-query-table">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Reputation Heatmap</h3>
+                    <div id="reputation-map"></div>
+                </div>
+            </section>
+
+            <!-- Level 4: Command & Control -->
+            <section class="level-4">
+                <div class="search-bar">
+                    <input type="text" id="player-search" class="search-input" placeholder="Search players by name, UUID, or IP..." />
+                    <button class="search-btn" onclick="searchPlayer()">Search</button>
+                </div>
+
+                <div class="control-sections">
+                    <div class="dangerous-actions">
+                        <h4>Dangerous Actions</h4>
+                        <button class="danger-btn" onclick="showDangerousModal('RESET_BASELINE')">Reset Traffic Baseline</button>
+                        <button class="danger-btn" onclick="showDangerousModal('CLEAR_CACHE')">Clear Global Cache</button>
+                        <button class="danger-btn" onclick="showDangerousModal('EMERGENCY_LOCKDOWN')">Emergency Lockdown</button>
+                    </div>
+
+                    <div class="audit-log">
+                        <h4>Audit Log Stream</h4>
+                        <div id="audit-stream" class="audit-stream">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Dangerous Action Modal -->
+    <div id="dangerous-modal" class="modal-overlay">
+        <div class="modal">
+            <h3>Confirm Dangerous Action</h3>
+            <p id="modal-description">This action cannot be undone. Please type the confirmation phrase to proceed.</p>
+            <p style="font-family: monospace; background: var(--bg-tertiary); padding: 10px; border-radius: 4px; text-align: center; margin-bottom: 16px;">
+                <span id="confirmation-phrase">CONFIRM RESET_BASELINE</span>
+            </p>
+            <input type="text" id="confirmation-input" placeholder="Type confirmation phrase" />
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeDangerousModal()">Cancel</button>
+                <button class="modal-btn confirm" onclick="executeDangerousAction()">Execute</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let sessionToken = localStorage.getItem('atlas_session');
+        let currentDangerousAction = null;
+        let dangerousToken = null;
+        let map = null;
+
+        // API Helper
+        async function api(endpoint, method = 'GET', body = null) {
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (sessionToken) {
+                headers['X-Session-Token'] = sessionToken;
+            }
+
+            const options = { method, headers };
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+
+            const response = await fetch('/api/' + endpoint, options);
+
+            if (response.status === 401) {
+                logout();
+                throw new Error('Session expired');
+            }
+
+            return response.json();
+        }
+
+        // Auth
+        async function login() {
+            const token = document.getElementById('auth-token').value;
+            const errorEl = document.getElementById('login-error');
+
+            try {
+                const result = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                }).then(r => r.json());
+
+                if (result.success) {
+                    sessionToken = result.sessionToken;
+                    localStorage.setItem('atlas_session', sessionToken);
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('dashboard').classList.remove('hidden');
+                    initDashboard();
+                } else {
+                    errorEl.textContent = result.error || 'Invalid token';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (e) {
+                errorEl.textContent = 'Connection error';
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            sessionToken = null;
+            localStorage.removeItem('atlas_session');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+        }
+
+        // Init
+        async function initDashboard() {
+            // Check session
+            if (sessionToken) {
+                try {
+                    const result = await api('auth/check');
+                    if (!result.authenticated) {
+                        logout();
+                        return;
+                    }
+                } catch (e) {
+                    logout();
+                    return;
+                }
+            } else {
+                return;
+            }
+
+            // Show dashboard
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+
+            // Init components
+            initMap();
+            initPredictionChart();
+
+            // Start polling
+            updateAllData();
+            setInterval(updateCriticalData, 2000);
+            setInterval(updateStandardData, 10000);
+            setInterval(updateSlowData, 30000);
+        }
+
+        // Map initialization with Leaflet
+        function initMap() {
+            map = L.map('reputation-map', {
+                center: [20, 0],
+                zoom: 1,
+                zoomControl: false,
+                attributionControl: false
+            });
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19
+            }).addTo(map);
+
+            // Add region markers
+            updateReputationMap();
+        }
+
+        async function updateReputationMap() {
+            try {
+                const data = await api('reputation/geo');
+
+                // Clear existing markers
+                map.eachLayer(layer => {
+                    if (layer instanceof L.CircleMarker) {
+                        map.removeLayer(layer);
+                    }
+                });
+
+                // Add new markers
+                for (const region of data.regions) {
+                    const total = region.trusted + region.suspicious;
+                    const ratio = region.trusted / (total || 1);
+                    const color = ratio > 0.9 ? '#10b981' : ratio > 0.7 ? '#f59e0b' : '#ef4444';
+
+                    const marker = L.circleMarker([region.lat, region.lng], {
+                        radius: Math.sqrt(total) * 2 + 5,
+                        fillColor: color,
+                        color: color,
+                        weight: 2,
+                        opacity: 0.8,
+                        fillOpacity: 0.4
+                    }).addTo(map);
+
+                    marker.bindPopup(`
+                        <div class="region-popup">
+                            <h4>${region.name}</h4>
+                            <p>Trusted: ${region.trusted}</p>
+                            <p>Suspicious: ${region.suspicious}</p>
+                        </div>
+                    `);
+                }
+            } catch (e) {
+                console.error('Failed to update reputation map:', e);
+            }
+        }
+
+        // Prediction chart
+        function initPredictionChart() {
+            const canvas = document.getElementById('prediction-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = 200;
+
+            drawPredictionChart(ctx, []);
+        }
+
+        function drawPredictionChart(ctx, dataPoints) {
+            const width = ctx.canvas.width;
+            const height = ctx.canvas.height;
+            const padding = 40;
+
+            // Clear
+            ctx.fillStyle = '#1a1a25';
+            ctx.fillRect(0, 0, width, height);
+
+            if (dataPoints.length === 0) {
+                ctx.fillStyle = '#606070';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Loading prediction data...', width / 2, height / 2);
+                return;
+            }
+
+            // Find range
+            const values = dataPoints.flatMap(p => [p.actual, p.predicted].filter(v => v != null));
+            const maxVal = Math.max(...values, 100);
+            const minVal = Math.min(...values, 0);
+            const range = maxVal - minVal || 100;
+
+            // Scale functions
+            const scaleX = i => padding + (i / (dataPoints.length - 1)) * (width - padding * 2);
+            const scaleY = v => height - padding - ((v - minVal) / range) * (height - padding * 2);
+
+            // Draw grid
+            ctx.strokeStyle = '#2a2a3a';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (i / 4) * (height - padding * 2);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+            }
+
+            // Draw actual line
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            let started = false;
+            dataPoints.forEach((p, i) => {
+                if (p.actual != null) {
+                    if (!started) {
+                        ctx.moveTo(scaleX(i), scaleY(p.actual));
+                        started = true;
+                    } else {
+                        ctx.lineTo(scaleX(i), scaleY(p.actual));
+                    }
+                }
+            });
+            ctx.stroke();
+
+            // Draw predicted line
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            dataPoints.forEach((p, i) => {
+                if (i === 0) {
+                    ctx.moveTo(scaleX(i), scaleY(p.predicted));
+                } else {
+                    ctx.lineTo(scaleX(i), scaleY(p.predicted));
+                }
+            });
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw now line
+            const nowIndex = dataPoints.findIndex(p => p.actual == null);
+            if (nowIndex > 0) {
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(scaleX(nowIndex - 1), padding);
+                ctx.lineTo(scaleX(nowIndex - 1), height - padding);
+                ctx.stroke();
+
+                ctx.fillStyle = '#f59e0b';
+                ctx.font = '11px sans-serif';
+                ctx.fillText('NOW', scaleX(nowIndex - 1), padding - 5);
+            }
+
+            // Legend
+            ctx.font = '11px sans-serif';
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillText('Actual', padding, 15);
+            ctx.fillStyle = '#06b6d4';
+            ctx.fillText('Predicted', padding + 60, 15);
+        }
+
+        // Data updates
+        async function updateAllData() {
+            await updateCriticalData();
+            await updateStandardData();
+            await updateSlowData();
+        }
+
+        async function updateCriticalData() {
+            try {
+                // Threat level
+                const threat = await api('threat');
+                const threatEl = document.getElementById('threat-level');
+                threatEl.textContent = threat.level;
+                threatEl.className = 'threat-level ' + threat.level.toLowerCase();
+                document.getElementById('z-score').textContent = 'Z-Score: ' + (threat.zScore || 0).toFixed(2);
+
+                // Throughput
+                const throughput = await api('throughput');
+                document.getElementById('pps').textContent = formatNumber(throughput.pps || 0);
+                document.getElementById('cps').textContent = formatNumber(throughput.cps || 0);
+                document.getElementById('bandwidth').textContent = formatBytes(throughput.bandwidth || 0) + '/s';
+
+                // Incidents
+                const incidents = await api('incidents');
+                updateIncidentList(incidents);
+
+            } catch (e) {
+                console.error('Critical data update failed:', e);
+                document.getElementById('status-dot').classList.add('error');
+                document.getElementById('status-text').textContent = 'Disconnected';
+            }
+        }
+
+        async function updateStandardData() {
+            try {
+                // Nodes
+                const nodes = await api('nodes');
+                updateNodeGrid(nodes);
+
+                // Scaling
+                const scaling = await api('scaling');
+                document.getElementById('min-replicas').textContent = scaling.minReplicas || 1;
+                document.getElementById('max-replicas').textContent = scaling.maxReplicas || 10;
+
+                let currentReplicas = 0;
+                if (scaling.statefulSets) {
+                    currentReplicas = scaling.statefulSets.reduce((sum, s) => sum + s.ready, 0);
+                }
+                document.getElementById('current-replicas').textContent = currentReplicas;
+
+                // Status
+                document.getElementById('status-dot').classList.remove('error', 'warning');
+                document.getElementById('status-text').textContent = 'Connected';
+
+            } catch (e) {
+                console.error('Standard data update failed:', e);
+            }
+        }
+
+        async function updateSlowData() {
+            try {
+                // Predictions
+                const predictions = await api('predictions');
+                const canvas = document.getElementById('prediction-canvas');
+                const ctx = canvas.getContext('2d');
+                drawPredictionChart(ctx, predictions.dataPoints || []);
+
+                // Slow queries
+                const slowQueries = await api('slowqueries');
+                updateSlowQueries(slowQueries);
+
+                // Audit log
+                const audit = await api('audit?limit=50');
+                updateAuditLog(audit);
+
+                // Reputation map
+                updateReputationMap();
+
+            } catch (e) {
+                console.error('Slow data update failed:', e);
+            }
+        }
+
+        // UI Updates
+        function updateIncidentList(incidents) {
+            const container = document.getElementById('incident-list');
+
+            if (!incidents || incidents.length === 0) {
+                container.innerHTML = '<div class="incident-item"><span>No active incidents</span></div>';
+                return;
+            }
+
+            container.innerHTML = incidents.slice(0, 10).map(inc => `
+                <div class="incident-item">
+                    <span class="incident-type ${(inc.type || 'info').toLowerCase()}">${inc.type || 'INFO'}</span>
+                    <span>${inc.details || inc.action || 'Unknown incident'}</span>
+                </div>
+            `).join('');
+        }
+
+        function updateNodeGrid(nodes) {
+            const container = document.getElementById('node-grid');
+
+            if (!nodes || nodes.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-secondary); padding: 20px; text-align: center;">No nodes available</div>';
+                return;
+            }
+
+            container.innerHTML = nodes.map(node => {
+                const mspt = node.mspt || 0;
+                const msptClass = mspt < 30 ? 'good' : mspt < 45 ? 'warning' : 'critical';
+                const tileClass = node.draining ? 'draining' : mspt < 30 ? 'healthy' : mspt < 45 ? '' : 'degraded';
+
+                return `
+                    <div class="node-tile ${tileClass}" onclick="showNodeDetails('${node.name}')">
+                        <div class="node-name">${node.name}</div>
+                        <div class="node-mspt ${msptClass}">${mspt.toFixed(0)}</div>
+                        <div class="node-players">${node.players || 0} players</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateSlowQueries(queries) {
+            const container = document.getElementById('slow-queries');
+
+            if (!queries || queries.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-secondary); padding: 10px;">No slow queries detected</div>';
+                return;
+            }
+
+            container.innerHTML = queries.map(q => {
+                const timeClass = q.durationMs > 200 ? 'critical' : 'slow';
+                return `
+                    <div class="query-row">
+                        <span class="query-text">${q.query}</span>
+                        <span class="query-time ${timeClass}">${q.durationMs}ms</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateAuditLog(entries) {
+            const container = document.getElementById('audit-stream');
+
+            if (!entries || entries.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-secondary);">No audit entries</div>';
+                return;
+            }
+
+            container.innerHTML = entries.map(entry => {
+                const time = new Date(parseInt(entry.timestamp)).toLocaleTimeString();
+                return `
+                    <div class="audit-entry">
+                        <span class="audit-time">${time}</span>
+                        <span class="audit-action">${entry.action}</span>
+                        <span>${entry.details || ''}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Actions
+        async function forceScaleUp() {
+            try {
+                const result = await api('scaling', 'POST', {
+                    target: 'lobby',
+                    replicas: parseInt(document.getElementById('replica-range').value)
+                });
+                if (result.success) {
+                    alert('Scale up initiated');
+                    updateStandardData();
+                } else {
+                    alert('Failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function drainAll() {
+            if (!confirm('Are you sure you want to drain ALL servers?')) return;
+
+            try {
+                const result = await api('drain', 'POST', { action: 'drainAll' });
+                if (result.success) {
+                    alert('Drain initiated for all servers');
+                    updateStandardData();
+                } else {
+                    alert('Failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        function updateReplicaTarget(value) {
+            document.getElementById('replica-range').value = value;
+        }
+
+        async function searchPlayer() {
+            const query = document.getElementById('player-search').value.trim();
+            if (!query) return;
+
+            try {
+                const result = await api('search', 'POST', { query });
+                if (result.results && result.results.length > 0) {
+                    const player = result.results[0];
+                    alert(`Found: ${player.name}\nUUID: ${player.uuid}\nReputation: ${player.reputation}\nServer: ${player.server}`);
+                } else {
+                    alert('No results found');
+                }
+            } catch (e) {
+                alert('Search failed: ' + e.message);
+            }
+        }
+
+        function showNodeDetails(nodeName) {
+            alert('Node details for: ' + nodeName + '\n\nFull details would be shown in a modal.');
+        }
+
+        // Dangerous actions
+        async function showDangerousModal(action) {
+            currentDangerousAction = action;
+
+            try {
+                const result = await api('dangerous/token', 'POST', { action });
+                if (result.token) {
+                    dangerousToken = result.token;
+                    document.getElementById('confirmation-phrase').textContent = 'CONFIRM ' + action;
+                    document.getElementById('confirmation-input').value = '';
+                    document.getElementById('dangerous-modal').classList.add('active');
+                } else {
+                    alert('Failed to generate confirmation token');
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        function closeDangerousModal() {
+            document.getElementById('dangerous-modal').classList.remove('active');
+            currentDangerousAction = null;
+            dangerousToken = null;
+        }
+
+        async function executeDangerousAction() {
+            const confirmation = document.getElementById('confirmation-input').value;
+            const expectedPhrase = 'CONFIRM ' + currentDangerousAction;
+
+            if (confirmation !== expectedPhrase) {
+                alert('Confirmation phrase does not match');
+                return;
+            }
+
+            try {
+                const result = await api('dangerous/execute', 'POST', {
+                    action: currentDangerousAction,
+                    token: dangerousToken,
+                    confirmation: confirmation
+                });
+
+                if (result.success) {
+                    alert('Action executed successfully');
+                    closeDangerousModal();
+                    updateAllData();
+                } else {
+                    alert('Failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Utilities
+        function formatNumber(n) {
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+            if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+            return n.toString();
+        }
+
+        function formatBytes(bytes) {
+            if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + ' GB';
+            if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+            if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return bytes + ' B';
+        }
+
+        // Init on load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionToken) {
+                initDashboard();
+            }
+        });
+
+        // Enter key on login
+        document.getElementById('auth-token').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') login();
+        });
+    </script>
+</body>
+</html>
