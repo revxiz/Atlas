@@ -116,30 +116,69 @@ public class Atlas {
 
             // Initialize health probe server
             if (config.isHealthEnabled()) {
-                healthProbeServer = new HealthProbeServer(
-                    config.getHealthPort(),
-                    config.getHealthBind(),
-                    this,
-                    logger
-                );
-                healthProbeServer.start();
-                logger.info("Health probe server started on {}:{}",
-                    config.getHealthBind(), config.getHealthPort());
+                int healthPort = config.getHealthPort();
+                String healthBind = config.getHealthBind();
+
+                // Try to start health server, but if port is taken, attempt incremental fallback
+                boolean healthStarted = false;
+                for (int attempt = 0; attempt < 10 && !healthStarted; attempt++) {
+                    int tryPort = healthPort + attempt;
+                    try {
+                        healthProbeServer = new HealthProbeServer(
+                            tryPort,
+                            healthBind,
+                            this,
+                            logger
+                        );
+                        healthProbeServer.start();
+                        logger.info("Health probe server started on {}:{}", healthBind, tryPort);
+                        // update config value to reflect the actual bound port
+                        config.setHealthPort(tryPort);
+                        healthStarted = true;
+                    } catch (Exception e) {
+                        logger.warn("Health probe bind failed on {}:{} (attempt {}): {}", healthBind, tryPort, attempt, e.getMessage());
+                        if (attempt == 9) {
+                            logger.error("Unable to start health probe server after {} attempts, disabling health probe", attempt + 1);
+                        }
+                    }
+                }
             }
 
             // Initialize dashboard
             if (config.isDashboardEnabled()) {
-                dashboardServer = new AtlasDashboardServer(
-                    config.getDashboardPort(),
-                    config.getDashboardBind(),
-                    config.getDashboardAuthToken(),
-                    config.getDashboardAllowedIps(),
-                    this,
-                    logger
-                );
-                dashboardServer.start();
-                logger.info("Dashboard started on {}:{}",
-                    config.getDashboardBind(), config.getDashboardPort());
+                // Security: do not bind dashboard to 0.0.0.0 without an auth token or allowed-ips configured
+                String dashboardBind = config.getDashboardBind();
+                if ("0.0.0.0".equals(dashboardBind) && (config.getDashboardAuthToken() == null || config.getDashboardAuthToken().isBlank())
+                        && (config.getDashboardAllowedIps() == null || config.getDashboardAllowedIps().isEmpty())) {
+                    logger.warn("Dashboard bind is 0.0.0.0 but no auth token or allowed IPs are configured. Falling back to 127.0.0.1 for safety.");
+                    dashboardBind = "127.0.0.1";
+                    config.setDashboardBind(dashboardBind);
+                }
+
+                int dashboardPort = config.getDashboardPort();
+                boolean dashboardStarted = false;
+                for (int attempt = 0; attempt < 10 && !dashboardStarted; attempt++) {
+                    int tryPort = dashboardPort + attempt;
+                    try {
+                        dashboardServer = new AtlasDashboardServer(
+                            tryPort,
+                            dashboardBind,
+                            config.getDashboardAuthToken(),
+                            config.getDashboardAllowedIps(),
+                            this,
+                            logger
+                        );
+                        dashboardServer.start();
+                        logger.info("Dashboard started on {}:{}", dashboardBind, tryPort);
+                        config.setDashboardPort(tryPort);
+                        dashboardStarted = true;
+                    } catch (Exception e) {
+                        logger.warn("Dashboard bind failed on {}:{} (attempt {}): {}", dashboardBind, tryPort, attempt, e.getMessage());
+                        if (attempt == 9) {
+                            logger.error("Unable to start dashboard after {} attempts, disabling dashboard", attempt + 1);
+                        }
+                    }
+                }
             }
 
             // Initialize Velotim bridge (soft dependency)

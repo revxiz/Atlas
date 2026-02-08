@@ -19,10 +19,12 @@ public class AtlasConfig {
 
     private final Map<String, Object> root;
     private final Logger logger;
+    private final Path dataDirectory;
 
-    private AtlasConfig(Map<String, Object> root, Logger logger) {
+    private AtlasConfig(Map<String, Object> root, Logger logger, Path dataDirectory) {
         this.root = root;
         this.logger = logger;
+        this.dataDirectory = dataDirectory;
     }
 
     public static AtlasConfig load(Path dataDirectory, Logger logger) {
@@ -47,7 +49,7 @@ public class AtlasConfig {
             Yaml yaml = new Yaml();
             Map<String, Object> root = yaml.load(content);
 
-            return new AtlasConfig(root, logger);
+            return new AtlasConfig(root, logger, dataDirectory);
 
         } catch (Exception e) {
             logger.error("Failed to load config: {}", e.getMessage());
@@ -76,6 +78,70 @@ public class AtlasConfig {
             i++;
         }
         return result.toString();
+    }
+
+    /**
+     * Persist current configuration back to disk (overwrites config.yml). Backs up previous file.
+     */
+    public synchronized void save() {
+        try {
+            Path configPath = dataDirectory.resolve("config.yml");
+            // Backup
+            if (Files.exists(configPath)) {
+                Path bak = dataDirectory.resolve("config.yml.bak");
+                Files.copy(configPath, bak, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            Yaml yaml = new Yaml();
+            try (BufferedWriter writer = Files.newBufferedWriter(configPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+                yaml.dump(root, writer);
+            }
+            logger.info("Saved configuration to {}", configPath.toString());
+        } catch (Exception e) {
+            logger.warn("Failed to save configuration: {}", e.getMessage());
+        }
+    }
+
+    // Setter helpers that update the in-memory map and persist
+    public void setDashboardPort(int port) {
+        // root may contain nested 'dashboard' map
+        Map<String, Object> dashboard = (Map<String, Object>) root.get("dashboard");
+        if (dashboard == null) {
+            dashboard = new LinkedHashMap<>();
+            root.put("dashboard", dashboard);
+        }
+        dashboard.put("port", port);
+        save();
+    }
+
+    public void setDashboardBind(String bind) {
+        Map<String, Object> dashboard = (Map<String, Object>) root.get("dashboard");
+        if (dashboard == null) {
+            dashboard = new LinkedHashMap<>();
+            root.put("dashboard", dashboard);
+        }
+        dashboard.put("bind", bind);
+        save();
+    }
+
+    public void setHealthPort(int port) {
+        Map<String, Object> health = (Map<String, Object>) root.get("health");
+        if (health == null) {
+            health = new LinkedHashMap<>();
+            root.put("health", health);
+        }
+        health.put("port", port);
+        save();
+    }
+
+    public void setHealthBind(String bind) {
+        Map<String, Object> health = (Map<String, Object>) root.get("health");
+        if (health == null) {
+            health = new LinkedHashMap<>();
+            root.put("health", health);
+        }
+        health.put("bind", bind);
+        save();
     }
 
     // Helper methods
